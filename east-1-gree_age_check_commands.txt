@@ -1,0 +1,51 @@
+# tekton-prod-us-east-1-gree - Age Check Commands (46 resources)
+
+# TaskRuns: 0
+
+# PipelineRuns (46):
+kubectl get pipelinerun dispatch -n event--10d2907316d149e25afeaec66cedffd3c50eb092f09fe4935e27bb50
+kubectl get pipelinerun dispatch -n event--19a924fc56cf82caa10244c53c8f7d001e24a35dbe8d1c49078d0bf4
+kubectl get pipelinerun dispatch -n event--1b3003bbbe2f431bd9b287fc4b6401ff5feb1b2eb407bdda519e8446
+kubectl get pipelinerun dispatch -n event--2c50bf57397b10169e0b4fa2fc3b77fd26375a6bf7bb7ac2282b93bf
+kubectl get pipelinerun dispatch -n event--3ff6496f0a2cf7268fc405dea39ca7a93debafa894417a2b37fd5d9e
+kubectl get pipelinerun dispatch -n event--46b2d1d6528c52e3519f29979a1baabc38b30193b6b878673e898653
+kubectl get pipelinerun dispatch -n event--55db8eeb1e2cb6b4a6bbad504298ba550b124f4375d42c2e3c5c9b93
+kubectl get pipelinerun dispatch -n event--5f34a115672adfcc7ed7f28138420b1970704e30d0916416c74fa82d
+kubectl get pipelinerun run-githubcom0b3dc0b6274-deploy-c66dfcea20b5feb5 -n event--5f34a115672adfcc7ed7f28138420b1970704e30d0916416c74fa82d
+kubectl get pipelinerun dispatch -n event--62a9dca2cf5c04466f17ab7a19675ca7a3a83480db10207073a4c04c
+kubectl get pipelinerun dispatch -n event--743fa4ff47da213614e2daab12ce69c2f29af9f5669b8706211dd837
+kubectl get pipelinerun dispatch -n event--7642baff306c2827cecaa78948bef3253f47ef9ec1d3f2bdd51b7701
+kubectl get pipelinerun dispatch -n event--7dce86070418a4c2cf500a728a335ca4c103f956b7bcf38efe8f01d6
+kubectl get pipelinerun dispatch -n event--8615e2d811d0f0c2d22bb0c315367046e91aac64412fe3d907258fb4
+kubectl get pipelinerun run-githubcom8d7541de37a-myworkflow-b88e09e3c3a7ed01 -n event--8692c3c24d456526c3a4851cd7f2a68d4b0fab43e705eea10fe7676f
+kubectl get pipelinerun dispatch -n event--a094a6ec2b08e8195d35487ef219a33dc7e49d94cff3528975c2faa7
+kubectl get pipelinerun dispatch -n event--a610159712aa70686e37277d64ee42e8b9e6d94c52a7b6f93b5555fe
+kubectl get pipelinerun dispatch -n event--b0ccac06b2beab513223e91629a8d2891e1695519c2445aece99bcad
+kubectl get pipelinerun run-githubcomd2334e5c274-build-60d4e2f5dfc7a5ed -n event--b0ccac06b2beab513223e91629a8d2891e1695519c2445aece99bcad
+kubectl get pipelinerun run-githubcomd2334e5c274-deploy-cb4686bac701059f -n event--b0ccac06b2beab513223e91629a8d2891e1695519c2445aece99bcad
+kubectl get pipelinerun dispatch -n event--bc51023a96d41edf9e53d8ae900f8d8b39a4c704abc60e09ce667405
+kubectl get pipelinerun run-githubcomc458934c1e9-ngdispatch-519a26a9b2273ea3 -n event--bc51023a96d41edf9e53d8ae900f8d8b39a4c704abc60e09ce667405
+kubectl get pipelinerun dispatch -n event--c20ac9d6fcd187cdd4ee03e892df0a56911de2d0e7ad4aade4862be4
+kubectl get pipelinerun run-githubcomf9536752274-github-f5fcf5037a5d13e0 -n event--c20ac9d6fcd187cdd4ee03e892df0a56911de2d0e7ad4aade4862be4
+kubectl get pipelinerun run-githubcomf9536752274-heartbeat-69478b6358d7ed90 -n event--c20ac9d6fcd187cdd4ee03e892df0a56911de2d0e7ad4aade4862be4
+kubectl get pipelinerun dispatch -n event--c6b24e7442ae5857cb07c5b945d044779e016bb94aaf5df745a96d49
+kubectl get pipelinerun run-githubcom56fcff8a273-deploy-dc0b43d7f1a14d02 -n event--c6b24e7442ae5857cb07c5b945d044779e016bb94aaf5df745a96d49
+kubectl get pipelinerun dispatch -n event--f5bc71936fdef8c62dd79d44e20e41e88a49e4907935db2e1a9acfca
+kubectl get pipelinerun dispatch -n event--f7c691cd4c7ea82a0180985aa90c6bb609ec4e93eecf9bde19bcf9b8
+kubectl get pipelinerun run-githubcom8edb492a274-build-a9f19d1fa9c2d2d4 -n event--f7c691cd4c7ea82a0180985aa90c6bb609ec4e93eecf9bde19bcf9b8
+kubectl get pipelinerun run-githubcom8edb492a274-deploy-b8831e33d84b5886 -n event--f7c691cd4c7ea82a0180985aa90c6bb609ec4e93eecf9bde19bcf9b8
+kubectl get pipelinerun dispatch -n event-cloudbeesscannerscodescanyaml-087f4c1d4198a99aa9a724b1796
+kubectl get pipelinerun run-dispatchfea1cb22b372-codescan-442eb68cd08c00b3 -n event-cloudbeesscannerscodescanyaml-087f4c1d4198a99aa9a724b1796
+kubectl get pipelinerun dispatch -n event-cloudbeesscannerscodescanyaml-6a7c40f470b0cec0125cef84478
+kubectl get pipelinerun run-dispatch2f161e4982ca-codescan-85132adf39106c7b -n event-cloudbeesscannerscodescanyaml-6a7c40f470b0cec0125cef84478
+kubectl get pipelinerun dispatch -n event-cloudbeesscannerscodescanyaml-72c7396b1a4dca84607c5e1b2f7
+kubectl get pipelinerun run-dispatch1188eb8caa5d-codescan-0506d994ca45c7ef -n event-cloudbeesscannerscodescanyaml-72c7396b1a4dca84607c5e1b2f7
+kubectl get pipelinerun dispatch -n event-cloudbeesscannerscodescanyaml-a718716a977ccfdf8cacce20838
+kubectl get pipelinerun run-dispatch4b0edf4fd28f-codescan-34439c7b7b1b8b0e -n event-cloudbeesscannerscodescanyaml-a718716a977ccfdf8cacce20838
+kubectl get pipelinerun dispatch -n event-cloudbeesscannerscodescanyaml-d0e61d53d85499f67d6b6916c60
+kubectl get pipelinerun dispatch -n event-queuemanagementyaml-a9cd89e65f62e2ec8859ef72a605df2e04c4a
+kubectl get pipelinerun run-scheduleceac120bbe4f-queuemanagement-4874bc19deadca53 -n event-queuemanagementyaml-a9cd89e65f62e2ec8859ef72a605df2e04c4a
+kubectl get pipelinerun dispatch -n event-scheduledworkflowyaml-2eeb59e94503dea408765564209cbf39961
+kubectl get pipelinerun run-schedule443200c25195-scheduledworkflow-0f826f39fd77b498 -n event-scheduledworkflowyaml-2eeb59e94503dea408765564209cbf39961
+kubectl get pipelinerun dispatch -n event-unifyciyaml-f3bc19cbe04484816160f385a54b4e9156b4842762517
+kubectl get pipelinerun run-scheduled37a6c871b20-unifyci-c1b8342965ae5700 -n event-unifyciyaml-f3bc19cbe04484816160f385a54b4e9156b4842762517
