@@ -2,11 +2,69 @@
 
 ---
 
+## Pre-Cleanup: Check Namespace Status
+
+**IMPORTANT:** Namespaces may be stuck in "Terminating" state. Check status before cleanup.
+
+**For each cluster, run:**
+
+```bash
+# List all namespaces containing resources to delete
+kubectl get pipelineruns -A -o json | \
+  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
+  sort -u | \
+  while read ns; do
+    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
+    if [ -z "$status" ]; then
+      echo "$ns: Not Found"
+    else
+      echo "$ns: $status"
+    fi
+  done
+
+# Also check TaskRuns namespaces
+kubectl get taskruns -A -o json | \
+  jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
+  sort -u | \
+  while read ns; do
+    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
+    if [ -z "$status" ]; then
+      echo "$ns: Not Found"
+    else
+      echo "$ns: $status"
+    fi
+  done
+```
+
+**Interpret Results:**
+- `STATUS: Active` → Use **Method A** (normal delete)
+- `STATUS: Terminating` → Use **Method B** (finalizer removal)
+- `Not Found` → Use **Method A** (resource may have been auto-deleted)
+
+---
+
 ## Cluster: tekton-prod-us-west-2-gree
 
 **Resources:** 2 PipelineRuns
 
-**Namespaces stuck in Terminating - Remove finalizers:**
+### Check Namespace Status
+
+```bash
+kubectl get namespace event--d10ae34b8486bcd26a66e0efd1b1e6361a3a94f39492e962f396991f
+kubectl get namespace event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d285c9a0
+```
+
+### Method A: If Namespaces are Active or Not Found
+
+```bash
+kubectl delete pipelinerun run-githubcom6c7c37c637a-myworkflow-b974a2738ab5663a \
+  -n event--d10ae34b8486bcd26a66e0efd1b1e6361a3a94f39492e962f396991f --ignore-not-found=true
+
+kubectl delete pipelinerun run-githubcomb50ef320379-myworkflow-b36242cd9aad4ce5 \
+  -n event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d285c9a0 --ignore-not-found=true
+```
+
+### Method B: If Namespaces are Stuck in Terminating
 
 ```bash
 kubectl patch namespace event--d10ae34b8486bcd26a66e0efd1b1e6361a3a94f39492e962f396991f \
@@ -16,7 +74,10 @@ kubectl patch namespace event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d
   -p '{"metadata":{"finalizers":[]}}' --type=merge
 ```
 
-**Verify:**
+**Note:** Method B will delete the namespace and all resources inside automatically.
+
+### Verify
+
 ```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
 
@@ -31,7 +92,8 @@ Expected: `<no-output>`
 
 **Resources:** 0 (already clean)
 
-**Verify:**
+### Verify
+
 ```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
 
@@ -45,6 +107,24 @@ Expected: `<no-output>`
 ## Cluster: tekton-prod-us-east-1-blue
 
 **Resources:** 64 (1 TaskRun + 63 PipelineRuns)
+
+### Check Namespace Status First
+
+```bash
+# Check all namespaces containing resources
+kubectl get pipelineruns -A -o json | \
+  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
+  sort -u | \
+  while read ns; do
+    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
+    echo "$ns: ${status:-Not Found}"
+  done
+
+# Check TaskRun namespace
+kubectl get namespace event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163
+```
+
+### Method A: If Namespaces are Active or Not Found
 
 **Delete TaskRun:**
 ```bash
@@ -120,7 +200,34 @@ kubectl delete pipelinerun dispatch -n event-scheduledworkflowyaml-08f10a3fad828
 kubectl delete pipelinerun run-schedule2bc5ba4f0c62-scheduledworkflow-9824b51065decd33 -n event-scheduledworkflowyaml-08f10a3fad828d7cc6f0e5a69467572f6cf --ignore-not-found=true
 ```
 
-**Verify:**
+### Method B: If Any Namespaces are Stuck in Terminating
+
+**Extract unique namespaces and patch each:**
+
+```bash
+# Get list of stuck namespaces
+kubectl get pipelineruns -A -o json | \
+  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
+  sort -u | \
+  while read ns; do
+    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
+    if [ "$status" = "Terminating" ]; then
+      echo "Patching stuck namespace: $ns"
+      kubectl patch namespace "$ns" -p '{"metadata":{"finalizers":[]}}' --type=merge
+    fi
+  done
+
+# Also check TaskRun namespace
+kubectl get namespace event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 -o jsonpath='{.status.phase}'
+# If Terminating:
+kubectl patch namespace event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 \
+  -p '{"metadata":{"finalizers":[]}}' --type=merge
+```
+
+**Note:** Method B will delete namespaces and all resources inside automatically.
+
+### Verify
+
 ```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
 
@@ -134,6 +241,21 @@ Expected: `<no-output>`
 ## Cluster: tekton-prod-us-east-1-gree
 
 **Resources:** 46 PipelineRuns
+
+### Check Namespace Status First
+
+```bash
+# Check all namespaces containing resources
+kubectl get pipelineruns -A -o json | \
+  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
+  sort -u | \
+  while read ns; do
+    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
+    echo "$ns: ${status:-Not Found}"
+  done
+```
+
+### Method A: If Namespaces are Active or Not Found
 
 **Delete PipelineRuns:**
 ```bash
@@ -185,7 +307,28 @@ kubectl delete pipelinerun dispatch -n event-unifyciyaml-f3bc19cbe04484816160f38
 kubectl delete pipelinerun run-scheduled37a6c871b20-unifyci-c1b8342965ae5700 -n event-unifyciyaml-f3bc19cbe04484816160f385a54b4e9156b4842762517 --ignore-not-found=true
 ```
 
-**Verify:**
+### Method B: If Any Namespaces are Stuck in Terminating
+
+**Extract unique namespaces and patch each:**
+
+```bash
+# Get list of stuck namespaces
+kubectl get pipelineruns -A -o json | \
+  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
+  sort -u | \
+  while read ns; do
+    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
+    if [ "$status" = "Terminating" ]; then
+      echo "Patching stuck namespace: $ns"
+      kubectl patch namespace "$ns" -p '{"metadata":{"finalizers":[]}}' --type=merge
+    fi
+  done
+```
+
+**Note:** Method B will delete namespaces and all resources inside automatically.
+
+### Verify
+
 ```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
 
