@@ -4,42 +4,34 @@
 
 ## Pre-Cleanup: Check Namespace Status
 
-**IMPORTANT:** Namespaces may be stuck in "Terminating" state. Check status before cleanup.
+**IMPORTANT:** Before cleanup, check if namespaces are stuck in "Terminating" state.
 
-**For each cluster, run:**
+**Run this in the target cluster:**
 
 ```bash
-# List all namespaces containing resources to delete
+# Check PipelineRun namespaces
 kubectl get pipelineruns -A -o json | \
   jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
   sort -u | \
   while read ns; do
     status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
-    if [ -z "$status" ]; then
-      echo "$ns: Not Found"
-    else
-      echo "$ns: $status"
-    fi
+    echo "$ns: ${status:-Not Found}"
   done
 
-# Also check TaskRuns namespaces
+# Check TaskRun namespaces
 kubectl get taskruns -A -o json | \
   jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
   sort -u | \
   while read ns; do
     status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
-    if [ -z "$status" ]; then
-      echo "$ns: Not Found"
-    else
-      echo "$ns: $status"
-    fi
+    echo "$ns: ${status:-Not Found}"
   done
 ```
 
 **Interpret Results:**
-- `STATUS: Active` → Use **Method A** (normal delete)
-- `STATUS: Terminating` → Use **Method B** (finalizer removal)
-- `Not Found` → Use **Method A** (resource may have been auto-deleted)
+- `Active` → Use **Method A** (normal delete)
+- `Terminating` → Use **Method B** (finalizer removal)
+- `Not Found` → Skip (already deleted)
 
 ---
 
@@ -47,14 +39,7 @@ kubectl get taskruns -A -o json | \
 
 **Resources:** 2 PipelineRuns
 
-### Check Namespace Status
-
-```bash
-kubectl get namespace event--d10ae34b8486bcd26a66e0efd1b1e6361a3a94f39492e962f396991f
-kubectl get namespace event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d285c9a0
-```
-
-### Method A: If Namespaces are Active or Not Found
+### Method A: Normal Deletion (if namespaces are Active)
 
 ```bash
 kubectl delete pipelinerun run-githubcom6c7c37c637a-myworkflow-b974a2738ab5663a \
@@ -64,7 +49,7 @@ kubectl delete pipelinerun run-githubcomb50ef320379-myworkflow-b36242cd9aad4ce5 
   -n event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d285c9a0 --ignore-not-found=true
 ```
 
-### Method B: If Namespaces are Stuck in Terminating
+### Method B: Finalizer Removal (if namespaces stuck in Terminating)
 
 ```bash
 kubectl patch namespace event--d10ae34b8486bcd26a66e0efd1b1e6361a3a94f39492e962f396991f \
@@ -74,17 +59,7 @@ kubectl patch namespace event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d
   -p '{"metadata":{"finalizers":[]}}' --type=merge
 ```
 
-**Note:** Method B will delete the namespace and all resources inside automatically.
-
-### Verify
-
-```bash
-kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-```
-
-Expected: `<no-output>`
+**Note:** Method B deletes namespaces and all resources inside automatically.
 
 ---
 
@@ -92,15 +67,7 @@ Expected: `<no-output>`
 
 **Resources:** 0 (already clean)
 
-### Verify
-
-```bash
-kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-```
-
-Expected: `<no-output>`
+No action needed.
 
 ---
 
@@ -108,32 +75,30 @@ Expected: `<no-output>`
 
 **Resources:** 64 (1 TaskRun + 63 PipelineRuns)
 
-### Check Namespace Status First
-
-```bash
-# Check all namespaces containing resources
-kubectl get pipelineruns -A -o json | \
-  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
-  sort -u | \
-  while read ns; do
-    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
-    echo "$ns: ${status:-Not Found}"
-  done
-
-# Check TaskRun namespace
-kubectl get namespace event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163
-```
-
-### Method A: If Namespaces are Active or Not Found
+### Method A: Normal Deletion (if namespaces are Active)
 
 **Delete TaskRun:**
 ```bash
 kubectl delete taskrun dispatch-dispatch \
-  -n event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 \
-  --ignore-not-found=true
+  -n event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 --ignore-not-found=true
 ```
 
-**Delete PipelineRuns:**
+**Delete PipelineRuns (automated):**
+```bash
+# Get all PipelineRuns with old flag and delete them
+kubectl get pipelineruns -A -o json | \
+  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"' | \
+  while read ns name; do
+    echo "Deleting pipelinerun $name in namespace $ns"
+    kubectl delete pipelinerun "$name" -n "$ns" --ignore-not-found=true
+  done
+```
+
+**Or individual commands (if preferred):**
+
+<details>
+<summary>Click to expand 63 individual delete commands</summary>
+
 ```bash
 kubectl delete pipelinerun dispatch -n event--03db26b9c529b0826bf88f15c7dca49b451d8bc56670854db2ba5402 --ignore-not-found=true
 kubectl delete pipelinerun dispatch -n event--30350b8464693ce7191a82e7e13e1a55e19df67ac86fcc6d4f4fb7ba --ignore-not-found=true
@@ -200,12 +165,12 @@ kubectl delete pipelinerun dispatch -n event-scheduledworkflowyaml-08f10a3fad828
 kubectl delete pipelinerun run-schedule2bc5ba4f0c62-scheduledworkflow-9824b51065decd33 -n event-scheduledworkflowyaml-08f10a3fad828d7cc6f0e5a69467572f6cf --ignore-not-found=true
 ```
 
-### Method B: If Any Namespaces are Stuck in Terminating
+</details>
 
-**Extract unique namespaces and patch each:**
+### Method B: Finalizer Removal (if namespaces stuck in Terminating)
 
 ```bash
-# Get list of stuck namespaces
+# Automated: Find and patch all Terminating namespaces
 kubectl get pipelineruns -A -o json | \
   jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
   sort -u | \
@@ -218,23 +183,14 @@ kubectl get pipelineruns -A -o json | \
   done
 
 # Also check TaskRun namespace
-kubectl get namespace event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 -o jsonpath='{.status.phase}'
-# If Terminating:
-kubectl patch namespace event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 \
-  -p '{"metadata":{"finalizers":[]}}' --type=merge
+ns="event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163"
+status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
+if [ "$status" = "Terminating" ]; then
+  kubectl patch namespace "$ns" -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
 ```
 
-**Note:** Method B will delete namespaces and all resources inside automatically.
-
-### Verify
-
-```bash
-kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-```
-
-Expected: `<no-output>`
+**Note:** Method B deletes namespaces and all resources inside automatically.
 
 ---
 
@@ -242,22 +198,24 @@ Expected: `<no-output>`
 
 **Resources:** 46 PipelineRuns
 
-### Check Namespace Status First
+### Method A: Normal Deletion (if namespaces are Active)
 
+**Delete PipelineRuns (automated):**
 ```bash
-# Check all namespaces containing resources
+# Get all PipelineRuns with old flag and delete them
 kubectl get pipelineruns -A -o json | \
-  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
-  sort -u | \
-  while read ns; do
-    status=$(kubectl get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null)
-    echo "$ns: ${status:-Not Found}"
+  jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"' | \
+  while read ns name; do
+    echo "Deleting pipelinerun $name in namespace $ns"
+    kubectl delete pipelinerun "$name" -n "$ns" --ignore-not-found=true
   done
 ```
 
-### Method A: If Namespaces are Active or Not Found
+**Or individual commands (if preferred):**
 
-**Delete PipelineRuns:**
+<details>
+<summary>Click to expand 46 individual delete commands</summary>
+
 ```bash
 kubectl delete pipelinerun dispatch -n event--10d2907316d149e25afeaec66cedffd3c50eb092f09fe4935e27bb50 --ignore-not-found=true
 kubectl delete pipelinerun dispatch -n event--19a924fc56cf82caa10244c53c8f7d001e24a35dbe8d1c49078d0bf4 --ignore-not-found=true
@@ -307,12 +265,12 @@ kubectl delete pipelinerun dispatch -n event-unifyciyaml-f3bc19cbe04484816160f38
 kubectl delete pipelinerun run-scheduled37a6c871b20-unifyci-c1b8342965ae5700 -n event-unifyciyaml-f3bc19cbe04484816160f385a54b4e9156b4842762517 --ignore-not-found=true
 ```
 
-### Method B: If Any Namespaces are Stuck in Terminating
+</details>
 
-**Extract unique namespaces and patch each:**
+### Method B: Finalizer Removal (if namespaces stuck in Terminating)
 
 ```bash
-# Get list of stuck namespaces
+# Automated: Find and patch all Terminating namespaces
 kubectl get pipelineruns -A -o json | \
   jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | .metadata.namespace' | \
   sort -u | \
@@ -325,21 +283,13 @@ kubectl get pipelineruns -A -o json | \
   done
 ```
 
-**Note:** Method B will delete namespaces and all resources inside automatically.
-
-### Verify
-
-```bash
-kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-```
-
-Expected: `<no-output>`
+**Note:** Method B deletes namespaces and all resources inside automatically.
 
 ---
 
-## Verification Queries (All Clusters)
+## Final Verification (Run After Cleanup)
+
+**Run these commands in each cluster to confirm cleanup:**
 
 ```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
@@ -347,4 +297,4 @@ kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus
 kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
 ```
 
-Expected: `<no-output>` on all clusters
+**Expected Result:** `<no-output>` (empty output means cleanup successful)

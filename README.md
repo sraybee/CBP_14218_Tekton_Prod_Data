@@ -6,36 +6,11 @@
 
 ---
 
-## Queries Executed
+## Quick Start for SRE
 
-We ran the following queries in each PROD Tekton cluster and prepared `CBP_14218_Query_Output.md`:
+### Step 1: Verify Current State
 
-**Query 1 (TaskRuns):**
-```bash
-kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-```
-
-**Query 2 (PipelineRuns):**
-```bash
-kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-```
-
----
-
-## Files
-
-- **CBP_14218_Query_Output.md** - Query results from all 4 PROD clusters (112 resources found)
-- **CBP_14218_SRE_Cleanup_Steps.md** - Cleanup commands cluster-wise
-
----
-
-## Usage Instructions
-
-### Before Running Cleanup Commands
-
-**1. Verify Data Is Still Accurate:**
-
-Run the same queries in the target cluster:
+Connect to the target cluster and run:
 
 ```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
@@ -43,14 +18,25 @@ kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus
 kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
 ```
 
-**2. Compare Results:**
+**Compare output with `PROD_Data/CBP_14218_Query_Output.md`:**
+- ✅ **Matches** → Proceed to Step 2
+- ❌ **Differs** → Review differences, adapt cleanup commands accordingly
 
-- If output **matches** `CBP_14218_Query_Output.md` → Use `CBP_14218_SRE_Cleanup_Steps.md` directly
-- If output **differs** → Adapt cleanup commands based on current data
+### Step 2: Execute Cleanup
 
-### Running Cleanup
+Follow the instructions in **`PROD_Data/CBP_14218_SRE_Cleanup_Steps.md`**:
+1. Check namespace status first
+2. Choose correct cleanup method (A or B)
+3. Verify cleanup completed
 
-Use commands from `CBP_14218_SRE_Cleanup_Steps.md` for the target cluster.
+---
+
+## Files in This Repository
+
+| File | Description |
+|------|-------------|
+| `PROD_Data/CBP_14218_Query_Output.md` | Original query results from all 4 PROD clusters (March 24, 2026) |
+| `PROD_Data/CBP_14218_SRE_Cleanup_Steps.md` | Step-by-step cleanup instructions for each cluster |
 
 ---
 
@@ -58,9 +44,25 @@ Use commands from `CBP_14218_SRE_Cleanup_Steps.md` for the target cluster.
 
 **Total Resources Found:** 112 (1 TaskRun + 111 PipelineRuns)
 
-| Cluster | TaskRuns | PipelineRuns | Total |
-|---------|----------|--------------|-------|
-| tekton-prod-us-west-2-gree | 0 | 2 | 2 |
-| tekton-prod-us-west-2-blue | 0 | 0 | 0 |
-| tekton-prod-us-east-1-blue | 1 | 63 | 64 |
-| tekton-prod-us-east-1-gree | 0 | 46 | 46 |
+| Cluster | TaskRuns | PipelineRuns | Total | Status |
+|---------|----------|--------------|-------|--------|
+| tekton-prod-us-west-2-gree | 0 | 2 | 2 | ⚠️ Needs cleanup |
+| tekton-prod-us-west-2-blue | 0 | 0 | 0 | ✅ Already clean |
+| tekton-prod-us-east-1-blue | 1 | 63 | 64 | ⚠️ Needs cleanup |
+| tekton-prod-us-east-1-gree | 0 | 46 | 46 | ⚠️ Needs cleanup |
+
+---
+
+## Background
+
+These resources contain the deprecated `DisableAffinityAssistant` feature flag from Tekton v0.62.9. They must be cleaned up before upgrading to Tekton v1.10.0.
+
+**Queries executed on March 24, 2026:**
+
+```bash
+# TaskRuns with old flag
+kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+
+# PipelineRuns with old flag
+kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
