@@ -1,11 +1,76 @@
-Cluster: tekton-prod-us-east-1-blue
+# CBP-14218: Production Query Results
 
+**Query Date:** March 24, 2026
+
+**Total Resources Found:** 112 (1 TaskRun + 111 PipelineRuns)
+
+---
+
+## Cluster: tekton-prod-us-west-2-gree
+
+**Resources:** 2 PipelineRuns
+
+### TaskRuns Query
+```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
 
-event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 dispatch-dispatch
+**Result:** `<no-output>`
 
+### PipelineRuns Query
+```bash
 kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
 
+**Result:**
+```
+event--d10ae34b8486bcd26a66e0efd1b1e6361a3a94f39492e962f396991f run-githubcom6c7c37c637a-myworkflow-b974a2738ab5663a
+event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d285c9a0 run-githubcomb50ef320379-myworkflow-b36242cd9aad4ce5
+```
+
+---
+
+## Cluster: tekton-prod-us-west-2-blue
+
+**Resources:** 0 (clean)
+
+### TaskRuns Query
+```bash
+kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
+
+**Result:** `<no-output>`
+
+### PipelineRuns Query
+```bash
+kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
+
+**Result:** `<no-output>`
+
+---
+
+## Cluster: tekton-prod-us-east-1-blue
+
+**Resources:** 64 (1 TaskRun + 63 PipelineRuns)
+
+### TaskRuns Query
+```bash
+kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
+
+**Result:**
+```
+event--6e346304378d3440a81718655a0e070ba89015c4c8a12e5f21f62163 dispatch-dispatch
+```
+
+### PipelineRuns Query
+```bash
+kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
+
+**Result:**
+```
 event--03db26b9c529b0826bf88f15c7dca49b451d8bc56670854db2ba5402 dispatch
 event--30350b8464693ce7191a82e7e13e1a55e19df67ac86fcc6d4f4fb7ba dispatch
 event--30350b8464693ce7191a82e7e13e1a55e19df67ac86fcc6d4f4fb7ba run-githubcomf7f43eee1e9-ngdispatch-c4457fcb88afc811
@@ -69,16 +134,28 @@ event-queuemanagementyaml-0792a3ecc6a0c2cc57cc3c1f2a8f63b3605a0 dispatch
 event-queuemanagementyaml-0792a3ecc6a0c2cc57cc3c1f2a8f63b3605a0 run-schedule16581fee028b-queuemanagement-cedd0ee329500ecb
 event-scheduledworkflowyaml-08f10a3fad828d7cc6f0e5a69467572f6cf dispatch
 event-scheduledworkflowyaml-08f10a3fad828d7cc6f0e5a69467572f6cf run-schedule2bc5ba4f0c62-scheduledworkflow-9824b51065decd33
+```
 
+---
 
-Cluster: tekton-prod-us-east-1-gree
+## Cluster: tekton-prod-us-east-1-gree
 
+**Resources:** 46 PipelineRuns
+
+### TaskRuns Query
+```bash
 kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
 
-<no-output>
+**Result:** `<no-output>`
 
+### PipelineRuns Query
+```bash
 kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
+```
 
+**Result:**
+```
 event--10d2907316d149e25afeaec66cedffd3c50eb092f09fe4935e27bb50 dispatch
 event--19a924fc56cf82caa10244c53c8f7d001e24a35dbe8d1c49078d0bf4 dispatch
 event--1b3003bbbe2f431bd9b287fc4b6401ff5feb1b2eb407bdda519e8446 dispatch
@@ -125,25 +202,16 @@ event-scheduledworkflowyaml-2eeb59e94503dea408765564209cbf39961 dispatch
 event-scheduledworkflowyaml-2eeb59e94503dea408765564209cbf39961 run-schedule443200c25195-scheduledworkflow-0f826f39fd77b498
 event-unifyciyaml-f3bc19cbe04484816160f385a54b4e9156b4842762517 dispatch
 event-unifyciyaml-f3bc19cbe04484816160f385a54b4e9156b4842762517 run-scheduled37a6c871b20-unifyci-c1b8342965ae5700
+```
 
+---
 
-Cluster: tekton-prod-us-west-2-blue
+## Summary
 
-kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-<no-output>
-
-kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-<no-output>
-
-Cluster: tekton-prod-us-west-2-gree
-
-kubectl get taskruns -A -o json | jq -r '.items[] | select(.status.retriesStatus[0].provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-<nno-output>
-
-kubectl get pipelineruns -A -o json | jq -r '.items[] | select(.status.provenance.featureFlags.DisableAffinityAssistant != null) | "\(.metadata.namespace) \(.metadata.name)"'
-
-event--d10ae34b8486bcd26a66e0efd1b1e6361a3a94f39492e962f396991f run-githubcom6c7c37c637a-myworkflow-b974a2738ab5663a
-event-myworkflowyaml-18e37eaea264bae48ae01772e933e37de3d285c9a0 run-githubcomb50ef320379-myworkflow-b36242cd9aad4ce5
+| Cluster | TaskRuns | PipelineRuns | Total |
+|---------|----------|--------------|-------|
+| tekton-prod-us-west-2-gree | 0 | 2 | 2 |
+| tekton-prod-us-west-2-blue | 0 | 0 | 0 |
+| tekton-prod-us-east-1-blue | 1 | 63 | 64 |
+| tekton-prod-us-east-1-gree | 0 | 46 | 46 |
+| **TOTAL** | **1** | **111** | **112** |
